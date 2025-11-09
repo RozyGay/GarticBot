@@ -114,20 +114,20 @@
                 <ColumnDefinition/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Vertical" Spacing="4">
+            <StackPanel Orientation="Vertical">
                 <TextBlock Text="GarticBot" FontSize="28" FontWeight="Bold" Foreground="White"/>
-                <TextBlock Text="Автоматический художник для Gartic Phone" Style="{StaticResource CaptionTextStyle}"/>
+                <TextBlock Text="Автоматический художник для Gartic Phone" Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0"/>
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button x:Name="OnTopButton" Content="Поверх" Style="{StaticResource FlatButton}" MinWidth="110" Click="OnTopButton_Click"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button x:Name="OnTopButton" Content="Поверх" Style="{StaticResource FlatButton}" MinWidth="110" Click="OnTopButton_Click" Margin="0,0,10,0"/>
                 <Button Content="Настройки" Style="{StaticResource FlatButton}" MinWidth="110" Click="SettingsButton_Click"/>
             </StackPanel>
         </Grid>
 
         <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
-            <StackPanel Spacing="12">
+            <StackPanel>
                 <TextBlock Text="Источник изображения" Style="{StaticResource SectionTitleStyle}"/>
-                <Grid>
+                <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
                         <ColumnDefinition Width="Auto"/>
@@ -139,42 +139,43 @@
                              Foreground="White"
                              Margin="0,0,12,0"
                              Tag="Введите URL картинки..."/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Content="URL" Style="{StaticResource FlatButton}" Padding="14,8" Click="DownloadImageFromURLButton"/>
-                        <Button Content="Файл" Style="{StaticResource FlatButton}" Padding="14,8" Click="GetImageFromFIleButton"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="URL" Style="{StaticResource FlatButton}" Padding="14,8" Click="DownloadImageFromURLButton" Margin="0,0,8,0"/>
+                        <Button Content="Файл" Style="{StaticResource FlatButton}" Padding="14,8" Click="GetImageFromFIleButton" Margin="0,0,8,0"/>
                         <Button Content="Буфер" Style="{StaticResource FlatButton}" Padding="14,8" Click="GetImageFromClipboardButton"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="2" ColumnSpacing="18">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1.35*"/>
+                <ColumnDefinition Width="18"/>
                 <ColumnDefinition Width="0.65*"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0">
                 <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="12">
+                    <StackPanel>
                         <TextBlock Text="Параметры рисования" Style="{StaticResource SectionTitleStyle}"/>
-                        <CheckBox x:Name="GrayScaleCheckbox" Content="Чёрно-белый режим" Style="{DynamicResource RoundedCheckbox}" Checked="GrayScaleCheckbox_Checked" Unchecked="GrayScaleCheckbox_Checked"/>
-                        <CheckBox x:Name="drawWithRectCheckbox" Content="Рисовать прямоугольниками" Style="{DynamicResource RoundedCheckbox}"/>
-                        <Button Content="Область рисования" Style="{StaticResource FlatButton}" MinWidth="180" Click="DrawRectSelectButton_Click"/>
+                        <CheckBox x:Name="GrayScaleCheckbox" Content="Чёрно-белый режим" Style="{DynamicResource RoundedCheckbox}" Checked="GrayScaleCheckbox_Checked" Unchecked="GrayScaleCheckbox_Checked" Margin="0,12,0,0"/>
+                        <CheckBox x:Name="drawWithRectCheckbox" Content="Рисовать прямоугольниками" Style="{DynamicResource RoundedCheckbox}" Margin="0,12,0,0"/>
+                        <Button Content="Область рисования" Style="{StaticResource FlatButton}" MinWidth="180" Click="DrawRectSelectButton_Click" Margin="0,12,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="12">
+                    <StackPanel>
                         <TextBlock Text="Скорость и шаг" Style="{StaticResource SectionTitleStyle}"/>
-                        <TextBlock Text="Скорость" Style="{StaticResource CaptionTextStyle}"/>
-                        <UniformGrid Columns="4" Margin="0,0,0,4">
+                        <TextBlock Text="Скорость" Style="{StaticResource CaptionTextStyle}" Margin="0,12,0,0"/>
+                        <UniformGrid Columns="4" Margin="0,4,0,4">
                             <RadioButton x:Name="SpeedRadio1" Content="1" GroupName="SpeedGroup" Foreground="White" HorizontalAlignment="Center"/>
                             <RadioButton x:Name="SpeedRadio2" Content="2" GroupName="SpeedGroup" Foreground="White" HorizontalAlignment="Center"/>
                             <RadioButton x:Name="SpeedRadio3" Content="3" GroupName="SpeedGroup" Foreground="White" HorizontalAlignment="Center" IsChecked="True"/>
                             <RadioButton x:Name="SpeedRadio4" Content="4" GroupName="SpeedGroup" Foreground="White" HorizontalAlignment="Center"/>
                         </UniformGrid>
-                        <StackPanel Spacing="6">
+                        <StackPanel Margin="0,6,0,0">
                             <TextBlock x:Name="SpacingLabel" Text="пропуск (5)" Style="{StaticResource CaptionTextStyle}"/>
                             <Slider x:Name="SpacingSlider"
                                     Style="{DynamicResource CustomSlider}"
@@ -183,24 +184,26 @@
                                     Value="5"
                                     SmallChange="1"
                                     TickPlacement="None"
-                                    ValueChanged="SpacingSlider_ValueChanged"/>
+                                    ValueChanged="SpacingSlider_ValueChanged"
+                                    Margin="0,6,0,0"/>
                         </StackPanel>
-                        <StackPanel Spacing="6">
+                        <StackPanel Margin="0,6,0,0">
                             <TextBlock x:Name="ContrastLabel" Text="контраст (0)" Style="{StaticResource CaptionTextStyle}"/>
                             <Slider x:Name="ContrastSlider"
                                     Style="{DynamicResource CustomSlider}"
                                     Minimum="-100"
                                     Maximum="100"
                                     SmallChange="1"
-                                    ValueChanged="ContrastSlider_ValueChanged"/>
+                                    ValueChanged="ContrastSlider_ValueChanged"
+                                    Margin="0,6,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="12">
+                    <StackPanel>
                         <TextBlock Text="Цвета и масштаб" Style="{StaticResource SectionTitleStyle}"/>
-                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,12,0,0">
                             <TextBlock Text="Цвета" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Center"/>
                             <TextBox x:Name="ColorCountInput"
                                      Style="{DynamicResource NumericInput}"
@@ -213,18 +216,20 @@
                                      Foreground="White"
                                      HorizontalContentAlignment="Center"
                                      PreviewTextInput="NumberValidationTextBox"
-                                     TextChanged="ColorCountInput_TextChanged"/>
-                            <StackPanel Orientation="Vertical" Spacing="6">
-                                <Button x:Name="colorsIncreaseButton" Content="▲" Style="{StaticResource FlatButton}" Width="44" Height="32" Padding="0" Click="colorsChangeButton_Click"/>
+                                     TextChanged="ColorCountInput_TextChanged"
+                                     Margin="10,0,0,0"/>
+                            <StackPanel Orientation="Vertical" Margin="10,0,0,0">
+                                <Button x:Name="colorsIncreaseButton" Content="▲" Style="{StaticResource FlatButton}" Width="44" Height="32" Padding="0" Click="colorsChangeButton_Click" Margin="0,0,0,6"/>
                                 <Button x:Name="colorsDecreaseButton" Content="▼" Style="{StaticResource FlatButton}" Width="44" Height="32" Padding="0" Click="colorsChangeButton_Click"/>
                             </StackPanel>
                         </StackPanel>
-                        <TextBlock Text="Масштаб изображения" Style="{StaticResource CaptionTextStyle}"/>
+                        <TextBlock Text="Масштаб изображения" Style="{StaticResource CaptionTextStyle}" Margin="0,12,0,0"/>
                         <ComboBox x:Name="imageSizeCombobox"
                                   Style="{DynamicResource theComboBox}"
                                   SelectedIndex="1"
                                   Height="32"
-                                  SelectionChanged="imageSizeCombobox_SelectionChanged">
+                                  SelectionChanged="imageSizeCombobox_SelectionChanged"
+                                  Margin="0,12,0,0">
                             <ComboBoxItem Content="обычный"/>
                             <ComboBoxItem Content="вписать"/>
                             <ComboBoxItem Content="растянуть"/>
@@ -234,7 +239,7 @@
                 </Border>
             </StackPanel>
 
-            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+            <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
