@@ -1,7 +1,6 @@
 using AForge.Imaging.ColorReduction;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
@@ -13,7 +12,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using static GarticBot.Utils;
 using Color = System.Drawing.Color;
 
@@ -32,6 +30,11 @@ namespace GarticBot
         private Thread runner;
         public bool RunThread = false;
         public bool SkipColor = false;
+        private const int PaletteClickDelay = 60;
+        private const int ChannelClickDelay = 35;
+        private const int ChannelInputDelay = 20;
+        private readonly SolidColorBrush onTopActiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(88, 101, 242));
+        private readonly SolidColorBrush onTopInactiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(36, 42, 62));
 
         [DllImport("User32.dll")]
         public static extern bool RegisterHotKey(
@@ -160,12 +163,8 @@ namespace GarticBot
         private void UpdateTopmostButton()
         {
             Topmost = settings.OnTop;
-            var imageBrush = new ImageBrush();
-            if (settings.OnTop)
-                imageBrush.ImageSource = new BitmapImage(new Uri("pack://application:,,,/Assets/onTopButtonSelected.png"));
-            else
-                imageBrush.ImageSource = new BitmapImage(new Uri("pack://application:,,,/Assets/onTopButton.png"));
-            OnTopButton.Background = imageBrush;
+            OnTopButton.Background = settings.OnTop ? onTopActiveBrush : onTopInactiveBrush;
+            OnTopButton.Content = settings.OnTop ? "Закреплено" : "Поверх";
         }
 
         private void OnTopButton_Click(object sender, RoutedEventArgs e)
@@ -187,8 +186,8 @@ namespace GarticBot
         {
             try
             {
-                WebClient client = new();
-                Stream stream = client.OpenRead(imageUrlTextBox.Text);
+                using WebClient client = new();
+                using Stream stream = client.OpenRead(imageUrlTextBox.Text);
                 originalImage = new Bitmap(stream);
                 UpdateImage();
                 errorLabel.Text = "";
@@ -249,6 +248,13 @@ namespace GarticBot
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
+            if (currentImage == null)
+            {
+                errorLabel.Text = "Загрузите изображение";
+                return;
+            }
+
+            errorLabel.Text = string.Empty;
             int gap = (int)SpacingSlider.Value;
             int speed = GetCurrentSpeed();
             bool drawRect = (bool)drawWithRectCheckbox.IsChecked;
@@ -256,7 +262,14 @@ namespace GarticBot
             runner = new Thread(() =>
             {
                 RunThread = true;
-                StartDraw(img, settings, gap, speed, (int)x, (int)y, drawRect);
+                try
+                {
+                    StartDraw(img, settings, gap, speed, (int)x, (int)y, drawRect);
+                }
+                finally
+                {
+                    img.Dispose();
+                }
             });
             runner.Start();
         }
@@ -312,23 +325,28 @@ namespace GarticBot
 
         }
 
-        public void DrawLine(Rectangle coordinates, int speed, bool drawRect)
+        public void DrawLine(Rectangle coordinates, int baseDelay, bool drawRect)
         {
             SetMousePos(coordinates.Location);
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-            
-            int posX = coordinates.X + coordinates.Width;
-            int posY = coordinates.Y + coordinates.Height;
-            
+
+            int endX = coordinates.X + coordinates.Width;
+            int endY = coordinates.Y + coordinates.Height;
+
             if (drawRect)
                 Thread.Sleep(5);
-            
-            SetMousePos(new System.Drawing.Point(posX, posY));
-            
-            if (!drawRect)
-                Thread.Sleep(coordinates.Width > 0 || coordinates.Height > 0 ? speed : speed / 2);
+
+            SetMousePos(new System.Drawing.Point(endX, endY));
+
+            int length = Math.Max(Math.Abs(coordinates.Width), Math.Abs(coordinates.Height));
+            int wait = drawRect ? baseDelay + length / 2 : baseDelay + length / 3;
+
+            if (coordinates.Width == 0 && coordinates.Height == 0)
+                wait = Math.Max(1, baseDelay / 2);
             else
-                Thread.Sleep(speed * 2 / 3);
+                wait = Math.Max(1, wait);
+
+            Thread.Sleep(wait);
 
             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
         }
@@ -342,90 +360,131 @@ namespace GarticBot
         {
             SetMousePos(settings.OpenPalette);
             Mouse_Click();
-            SetMousePos(settings.RedValue);
-            Thread.Sleep(100);
-            Mouse_Click();
-            Type(color.R.ToString());
-            SetMousePos(settings.GreenValue);
-            Thread.Sleep(100);
-            Mouse_Click();
-            Type(color.G.ToString());
-            SetMousePos(settings.BlueValue);
-            Thread.Sleep(100);
-            Mouse_Click();
-            Type(color.B.ToString());
+            Thread.Sleep(PaletteClickDelay);
+
+            InputChannelValue(settings.RedValue, color.R);
+            InputChannelValue(settings.GreenValue, color.G);
+            InputChannelValue(settings.BlueValue, color.B);
+
             SetMousePos(settings.EmptySpace);
-            Thread.Sleep(100);
+            Thread.Sleep(ChannelClickDelay);
             Mouse_Click();
+        }
+
+        private void InputChannelValue(System.Drawing.Point target, int value)
+        {
+            SetMousePos(target);
+            Thread.Sleep(ChannelClickDelay);
+            Mouse_Click();
+            Thread.Sleep(ChannelInputDelay);
+            Type("^a");
+            Thread.Sleep(ChannelInputDelay);
+            Type(value.ToString());
+            Thread.Sleep(ChannelInputDelay);
         }
 
         public void StartDraw(Bitmap image, Settings settings, int gapSize, int speed, int x, int y, bool rectDraw)
         {
-            Dictionary<Color, List<Rectangle>> pixelLinesToDraw;
+            bool canceled = false;
+            try
+            {
+                Dictionary<Color, List<Rectangle>> pixelLinesToDraw = rectDraw
+                    ? ExtractRectsToDraw(image, x, y)
+                    : ExtractPixelLinesToDraw(image, gapSize, x, y);
 
-            if (!rectDraw)
-            {
-                pixelLinesToDraw = ExtractPixelLinesToDraw(image, gapSize, x, y);
-            }
-            else
-            {
-                pixelLinesToDraw = ExtractRectsToDraw(image, x, y);
-            }
+                int colorCount = Math.Max(1, pixelLinesToDraw.Count);
+                int drawDelay = ConvertSpeed(speed);
+                int colorPause = rectDraw
+                    ? speed switch { 1 => 40, 2 => 24, 3 => 15, _ => 7 }
+                    : speed switch { 1 => 45, 2 => 25, 3 => 12, _ => 5 };
 
-            uint done = 0;
-            foreach (var line in pixelLinesToDraw)
-            {
-                if (line.Key != Color.FromArgb(0, 0, 0))
+                uint done = 0;
+                foreach (var line in pixelLinesToDraw)
                 {
-                    if (line.Key.GetBrightness() < 0.95)
+                    if (canceled)
+                        break;
+
+                    if (line.Key != Color.FromArgb(0, 0, 0))
                     {
-                        SkipColor = false;
-
-                        SelectColor(line.Key, settings);
-                        foreach (var j in line.Value)
+                        if (line.Key.GetBrightness() < 0.95)
                         {
-                            DrawLine(j, ConvertSpeed(speed), rectDraw);
+                            SkipColor = false;
 
-                            if (!RunThread) { return; }
-                            if (SkipColor) break;
+                            SelectColor(line.Key, settings);
+                            foreach (var segment in line.Value)
+                            {
+                                DrawLine(segment, drawDelay, rectDraw);
+
+                                if (!RunThread)
+                                {
+                                    canceled = true;
+                                    break;
+                                }
+
+                                if (SkipColor)
+                                    break;
+                            }
+
+                            if (canceled)
+                                break;
                         }
 
-                        workProgressBar.Dispatcher.Invoke(() => { workProgressBar.Value = 100.0 * ((float)done / pixelLinesToDraw.Count); });
+                        bool skipRequested = SkipColor;
+                        SkipColor = false;
+
+                        done++;
+                        workProgressBar.Dispatcher.Invoke(() =>
+                        {
+                            workProgressBar.Value = 100.0 * ((float)done / colorCount);
+                        });
+
+                        if (!skipRequested)
+                            Thread.Sleep(colorPause);
                     }
-                    done++;
                 }
 
-                if (!rectDraw)
+                if (!canceled && pixelLinesToDraw.ContainsKey(Color.FromArgb(0, 0, 0)))
                 {
-                    if (speed == 1) Thread.Sleep(100);
-                    else if (speed == 2) Thread.Sleep(50);
-                    else if (speed == 3) Thread.Sleep(25);
-                    else if (speed == 4) Thread.Sleep(10);
-                }
-                else
-                {
-                    if (speed == 1) Thread.Sleep(80);
-                    else if (speed == 2) Thread.Sleep(60);
-                    else if (speed == 3) Thread.Sleep(30);
-                    else if (speed == 4) Thread.Sleep(15);
-                }
+                    SkipColor = false;
 
+                    SelectColor(Color.Black, settings);
+                    foreach (var segment in pixelLinesToDraw[Color.FromArgb(0, 0, 0)])
+                    {
+                        DrawLine(segment, drawDelay, rectDraw);
+
+                        if (!RunThread)
+                        {
+                            canceled = true;
+                            break;
+                        }
+
+                        if (SkipColor)
+                            break;
+                    }
+
+                    bool skipRequested = SkipColor;
+                    SkipColor = false;
+
+                    if (!canceled)
+                    {
+                        done++;
+                        workProgressBar.Dispatcher.Invoke(() =>
+                        {
+                            workProgressBar.Value = 100.0 * ((float)done / colorCount);
+                        });
+
+                        if (!skipRequested)
+                            Thread.Sleep(colorPause);
+                    }
+                }
             }
-            if (pixelLinesToDraw.ContainsKey(Color.FromArgb(0, 0, 0)))
+            finally
             {
-                SkipColor = false;
-
-                SelectColor(Color.Black, settings);
-                foreach (var j in pixelLinesToDraw[Color.FromArgb(0, 0, 0)])
+                RunThread = false;
+                if (canceled)
                 {
-                    DrawLine(j, ConvertSpeed(speed), rectDraw);
-
-                    if (!RunThread) { return; }
-                    if (SkipColor) break;
+                    workProgressBar.Dispatcher.Invoke(() => workProgressBar.Value = 0);
                 }
-                done++;
-
-                workProgressBar.Dispatcher.Invoke(() => { workProgressBar.Value = 100.0 * ((float)done / pixelLinesToDraw.Count); });
             }
         }
 
