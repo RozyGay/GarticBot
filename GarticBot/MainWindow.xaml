@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         Title="GarticBot"
         Height="640"
@@ -22,12 +23,21 @@
         <SolidColorBrush x:Key="ButtonHoverBrush" Color="#2F3653"/>
         <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1F2438"/>
         <SolidColorBrush x:Key="SubtleTextBrush" Color="#9AA2C1"/>
+        
+        <Storyboard x:Key="ButtonHoverStoryboard">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.9" Duration="0:0:0.2"/>
+        </Storyboard>
 
         <Style x:Key="CardBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource CardBrush}"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="20"/>
             <Setter Property="Margin" Value="0,0,0,18"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadow Color="#000000" BlurRadius="8" ShadowDepth="0" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
@@ -52,7 +62,10 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="8">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="8" BorderThickness="0">
+                            <Border.Effect>
+                                <DropShadow Color="#000000" BlurRadius="4" ShadowDepth="0" Opacity="0.2"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -77,10 +90,14 @@
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{StaticResource AccentBrush}" CornerRadius="12">
+                        <Border x:Name="border" Background="{StaticResource AccentBrush}" CornerRadius="12" BorderThickness="0">
+                            <Border.Effect>
+                                <DropShadow Color="#5865F2" BlurRadius="6" ShadowDepth="0" Opacity="0.4"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -109,20 +126,23 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,18">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Vertical">
-                <TextBlock Text="GarticBot" FontSize="28" FontWeight="Bold" Foreground="White"/>
-                <TextBlock Text="Автоматический художник для Gartic Phone" Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button x:Name="OnTopButton" Content="Поверх" Style="{StaticResource FlatButton}" MinWidth="110" Click="OnTopButton_Click" Margin="0,0,10,0"/>
-                <Button Content="Настройки" Style="{StaticResource FlatButton}" MinWidth="110" Click="SettingsButton_Click"/>
-            </StackPanel>
-        </Grid>
+        <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="GarticBot" FontSize="28" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Автоматический художник для Gartic Phone" Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0"/>
+                    <TextBlock Text="by olive project team" FontSize="11" Foreground="#7A8298" Margin="0,8,0,0" FontStyle="Italic"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="OnTopButton" Content="Поверх" Style="{StaticResource FlatButton}" MinWidth="110" Click="OnTopButton_Click" Margin="0,0,10,0"/>
+                    <Button Content="Настройки" Style="{StaticResource FlatButton}" MinWidth="110" Click="SettingsButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
             <StackPanel>
