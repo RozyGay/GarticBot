@@ -46,13 +46,13 @@ namespace GarticBot
 
         public static int ConvertSpeed(int speed)
         {
-            if (speed == 1)
-                return 100;
-            if (speed == 2)
-                return 30;
-            if (speed == 3)
-                return 6;
-            return 2;
+            return speed switch
+            {
+                1 => 60,
+                2 => 25,
+                3 => 8,
+                _ => 3
+            };
         }
 
         public static void Type(string text)
@@ -281,17 +281,31 @@ namespace GarticBot
                     }
                     else if (lineColor != tmp)
                     {
-                        if (!lines.ContainsKey(lineColor)) lines.Add(lineColor, new List<Rectangle>());
-                        lines[lineColor].Add(new Rectangle(lineStart, new Size(lineEnd)));
-                        if (lineColor != Color.Empty) nbLinesToDraw++;
+                        if (lineColor != Color.Empty)
+                        {
+                            if (!lines.TryGetValue(lineColor, out var segments))
+                            {
+                                segments = new List<Rectangle>();
+                                lines[lineColor] = segments;
+                            }
+                            segments.Add(BuildSegment(lineStart, lineEnd));
+                            nbLinesToDraw++;
+                        }
                         lineColor = tmp;
                         lineStart = currentPosition;
                     }
                     lineEnd = currentPosition;
                 }
-                if (!lines.ContainsKey(lineColor)) lines.Add(lineColor, new List<Rectangle>());
-                lines[lineColor].Add(new Rectangle(lineStart, new Size(lineEnd)));
-                if (lineColor != Color.Empty) nbLinesToDraw++;
+                if (lineColor != Color.Empty)
+                {
+                    if (!lines.TryGetValue(lineColor, out var segments))
+                    {
+                        segments = new List<Rectangle>();
+                        lines[lineColor] = segments;
+                    }
+                    segments.Add(BuildSegment(lineStart, lineEnd));
+                    nbLinesToDraw++;
+                }
             }
             return new KeyValuePair<Dictionary<Color, List<Rectangle>>, int>(lines, nbLinesToDraw);
         }
@@ -303,6 +317,13 @@ namespace GarticBot
             if (hori.Value <= vert.Value)
                 return hori.Key;
             return vert.Key;
+        }
+
+        private static Rectangle BuildSegment(Point start, Point end)
+        {
+            int width = Math.Max(0, end.X - start.X);
+            int height = Math.Max(0, end.Y - start.Y);
+            return new Rectangle(start.X, start.Y, width, height);
         }
 
         public static Keys GetKeycodeFromKey(System.Windows.Input.KeyEventArgs button)
