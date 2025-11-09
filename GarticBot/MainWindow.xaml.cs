@@ -35,6 +35,8 @@ namespace GarticBot
         private const int ChannelInputDelay = 20;
         private readonly SolidColorBrush onTopActiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(88, 101, 242));
         private readonly SolidColorBrush onTopInactiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(36, 42, 62));
+        private System.Threading.Timer updateImageDebounceTimer;
+        private Thread imageProcessingThread;
 
         [DllImport("User32.dll")]
         public static extern bool RegisterHotKey(
@@ -77,6 +79,10 @@ namespace GarticBot
             _source.RemoveHook(HwndHook);
             _source = null;
             UnregisterHotKey();
+            updateImageDebounceTimer?.Dispose();
+            imageProcessingThread?.Join(500);
+            currentImage?.Dispose();
+            originalImage?.Dispose();
             base.OnClosed(e);
         }
 
@@ -132,7 +138,7 @@ namespace GarticBot
         private void ContrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             ContrastLabel.Text = $"контраст ({(int)ContrastSlider.Value})";
-            UpdateImage();
+            ScheduleUpdateImage();
         }
 
         private void SpacingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -157,7 +163,7 @@ namespace GarticBot
             }
 
             ColorCountInput.Text = currentColor.ToString();
-            UpdateImage();
+            ScheduleUpdateImage();
         }
 
         private void UpdateTopmostButton()
@@ -226,12 +232,12 @@ namespace GarticBot
 
         private void GrayScaleCheckbox_Checked(object sender, RoutedEventArgs e)
         {
-            UpdateImage();
+            ScheduleUpdateImage();
         }
 
         private void ColorCountInput_TextChanged(object sender, TextChangedEventArgs e)
         {
-            UpdateImage();
+            ScheduleUpdateImage();
         }
 
         private int GetCurrentSpeed()
@@ -353,7 +359,7 @@ namespace GarticBot
 
         private void imageSizeCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            UpdateImage();
+            ScheduleUpdateImage();
         }
 
         public void SelectColor(Color color, Settings settings)
@@ -562,7 +568,82 @@ namespace GarticBot
                     temp.Dispose();
                 }
 
-                previewImage.Dispatcher.Invoke(() => { previewImage.Source = BitmapToBitmapSource(currentImage); });
+                temp = currentImage;
+                Bitmap previewWithWatermark = AddWatermark(temp);
+                previewImage.Dispatcher.Invoke(() => { previewImage.Source = BitmapToBitmapSource(previewWithWatermark); });
+                previewWithWatermark?.Dispose();
+            }
+        }
+
+        private void ScheduleUpdateImage()
+        {
+            updateImageDebounceTimer?.Dispose();
+            updateImageDebounceTimer = new System.Threading.Timer(_ => 
+            {
+                Dispatcher.Invoke(() => UpdateImageAsync());
+            }, null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        private void UpdateImageAsync()
+        {
+            imageProcessingThread?.Join(100);
+            
+            imageProcessingThread = new Thread(() =>
+            {
+                try
+                {
+                    UpdateImage();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Image update error: {ex}");
+                }
+            })
+            {
+                IsBackground = true
+            };
+            imageProcessingThread.Start();
+        }
+
+        private Bitmap AddWatermark(Bitmap image)
+        {
+            if (image == null) return null;
+
+            try
+            {
+                Bitmap result = (Bitmap)image.Clone();
+                using (Graphics g = Graphics.FromImage(result))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    
+                    using (Font font = new Font("Arial", 9, FontStyle.Regular))
+                    {
+                        string watermark = "by olive project team";
+                        SizeF textSize = g.MeasureString(watermark, font);
+                        
+                        int margin = 6;
+                        float x = result.Width - textSize.Width - margin;
+                        float y = result.Height - textSize.Height - margin;
+                        
+                        using (System.Drawing.Brush shadowBrush = new SolidBrush(Color.FromArgb(80, 0, 0, 0)))
+                        {
+                            g.DrawString(watermark, font, shadowBrush, x + 0.5f, y + 0.5f);
+                        }
+                        
+                        using (System.Drawing.Brush textBrush = new SolidBrush(Color.FromArgb(160, 200, 200, 200)))
+                        {
+                            g.DrawString(watermark, font, textBrush, x, y);
+                        }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Watermark error: {ex}");
+                return (Bitmap)image.Clone();
             }
         }
     }
